@@ -9,10 +9,13 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.TextView;
 
+import com.google.gson.Gson;
 import com.movesense.mds.Mds;
 import com.movesense.mds.MdsConnectionListener;
 import com.movesense.mds.MdsException;
+import com.movesense.mds.MdsNotificationListener;
 import com.movesense.mds.MdsResponseListener;
 import com.movesense.mds.MdsSubscription;
 import com.polidea.rxandroidble.RxBleClient;
@@ -104,6 +107,51 @@ public class DeviceConnect extends AppCompatActivity implements AdapterView.OnIt
                 mScanResArrayAdapter.notifyDataSetChanged();
             }
         });
+    }
+
+    private void subscribeToSensor(String connectedSerial) {
+        // Clean up existing subscription (if there is one)
+        if (mdsSubscription != null) {
+            unsubscribe();
+        }
+
+        // Build JSON doc that describes what resource and device to subscribe
+        // Here we subscribe to 13 hertz accelerometer data
+        StringBuilder sb = new StringBuilder();
+        String strContract = sb.append("{\"Uri\": \"").append(connectedSerial).append(URI_MEAS_ACC_13).append("\"}").toString();
+        Log.d(LOG_TAG, strContract);
+        final View sensorUI = findViewById(R.id.sensorUI_text);
+
+        subscribedDeviceSerial = connectedSerial;
+
+        mdsSubscription = mMds.builder().build(this).subscribe(URI_EVENTLISTENER,
+                strContract, new MdsNotificationListener() {
+                    @Override
+                    public void onNotification(String data) {
+                        Log.d(LOG_TAG, "onNotification(): " + data);
+
+                        // If UI not enabled, do it now
+                        if (sensorUI.getVisibility() == View.GONE)
+                            sensorUI.setVisibility(View.VISIBLE);
+
+                        AccDataResponse accResponse = new Gson().fromJson(data, AccDataResponse.class);
+                        if (accResponse != null && accResponse.body.array.length > 0) {
+
+                            String accStr =
+                                    String.format("%.02f, %.02f, %.02f",
+                                            accResponse.body.array[0].x, accResponse.body.array[0].y, accResponse.body.array[0].z);
+
+                            ((TextView)findViewById(R.id.sensorUI_text)).setText(accStr);
+                        }
+                    }
+
+                    @Override
+                    public void onError(MdsException error) {
+                        Log.e(LOG_TAG, "subscription onError(): ", error);
+                        unsubscribe();
+                    }
+                });
+
     }
 
     private void unsubscribe() {
@@ -208,28 +256,18 @@ public class DeviceConnect extends AppCompatActivity implements AdapterView.OnIt
 
         MyScanResult device = mScanResArrayList.get(position);
         if (!device.isConnected()) {
-            return;
+            // Stop scanning
+            onScanStopClicked(null);
+
+            // And connect to the device
+            connectBLEDevice(device);
         }
-
-        String uri = SCHEME_PREFIX + device.connectedSerial + "/Info";
-        final Context ctx = this;
-        mMds.get(uri, null, new MdsResponseListener() {
-            @Override
-            public void onSuccess(String s) {
-                Log.i(LOG_TAG, "Device " + device.connectedSerial + " /info request succesful: " + s);
-                // Display info in alert dialog
-                AlertDialog.Builder builder = new AlertDialog.Builder(ctx);
-                builder.setTitle("Device info:")
-                        .setMessage(s)
-                        .show();
-            }
-
-            @Override
-            public void onError(MdsException e) {
-                Log.e(LOG_TAG, "Device " + device.connectedSerial + " /info returned error: " + e);
-            }
-        });
+        else {
+            // Device is connected, trigger showing /Info
+            subscribeToSensor(device.connectedSerial);
+        }
     }
+
 
     @Override
     public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
