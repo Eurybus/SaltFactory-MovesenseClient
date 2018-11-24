@@ -42,6 +42,10 @@ public class DeviceConnect extends AppCompatActivity implements AdapterView.OnIt
     static private String URI_MEAS_HR = "/Meas/HR";
     static private String URI_SYSTEM_STATES_MOVEMENT = "/System/States/0";
     static private String URI_SYSTEM_STATES_CONNECTED = "/System/States/2";
+    static private String URI_MEAS_GYRO_INFO = "/Meas/Gyro/Info";
+    static private String URI_MEAS_GYRO_CONFIG = "/Meas/Gyro/Config";
+    static private String URI_MEAS_GYRO_GET_13 = "/Meas/Gyro/13";
+
 
     private MdsSubscription mdsSubscription;
     private String subscribedDeviceSerial;
@@ -163,7 +167,7 @@ public class DeviceConnect extends AppCompatActivity implements AdapterView.OnIt
         // Build JSON doc that describes what resource and device to subscribe
         // Here we subscribe to 13 hertz accelerometer data
         StringBuilder sb = new StringBuilder();
-        String strContract = sb.append("{\"Uri\": \"").append(connectedSerial).append(URI_MEAS_ACC_13).append("\"}").toString();
+        String strContract = sb.append("{\"Uri\": \"").append(connectedSerial).append(URI_MEAS_GYRO_GET_13).append("\"}").toString();
         Log.d(LOG_TAG, strContract);
         final View sensorUI = findViewById(R.id.sensorUI_text);
 
@@ -171,6 +175,7 @@ public class DeviceConnect extends AppCompatActivity implements AdapterView.OnIt
 
         mdsSubscription = mMds.builder().build(this).subscribe(URI_EVENTLISTENER,
                 strContract, new MdsNotificationListener() {
+                    long startTime = 0;
                     @Override
                     public void onNotification(String data) {
                         Log.d(LOG_TAG, "onNotification(): " + data);
@@ -179,28 +184,24 @@ public class DeviceConnect extends AppCompatActivity implements AdapterView.OnIt
                         if (sensorUI.getVisibility() == View.GONE)
                             sensorUI.setVisibility(View.VISIBLE);
 
-                        AccDataResponse accResponse = new Gson().fromJson(data, AccDataResponse.class);
-                        if (accResponse != null && accResponse.body.array.length > 0) {
-
-                            String accStr =
-                                    String.format("%.02f, %.02f, %.02f",
-                                            accResponse.body.array[0].x, accResponse.body.array[0].y, accResponse.body.array[0].z);
-
-                            ((TextView)findViewById(R.id.sensorUI_text)).setText(accStr);
+                        GyroDataResponse gyroResponse = new Gson().fromJson(data, GyroDataResponse.class);
+                        if (gyroResponse != null && gyroResponse.body.array.length > 0) {
+                            String gyroStr = String.format("%.02f, %.02f, %.02f",
+                                    gyroResponse.body.array[0].x, gyroResponse.body.array[0].y, gyroResponse.body.array[0].z);
+                            ((TextView) findViewById(R.id.sensorUI_text)).setText(gyroStr);
                             updateAccelLog(new MathUtils.Vector(
-                                    (float)accResponse.body.array[0].x,
-                                    (float)accResponse.body.array[0].y,
-                                    (float)accResponse.body.array[0].z
+                                    (float)gyroResponse.body.array[0].x,
+                                    (float)gyroResponse.body.array[0].y,
+                                    (float)gyroResponse.body.array[0].z
                             ));
-                            //RelayNotification(accResponse.toJson());
+                            if (startTime == 0)
+                                startTime = gyroResponse.body.timestamp;
+
+                            if (gyroResponse.body.timestamp - startTime > 1000) {
+                                startTime = gyroResponse.body.timestamp;
+                                sendAccelLogs(gyroResponse.body.timestamp);
+                            }
                         }
-//                        StateDataResponse stateResponse = new Gson().fromJson(data, StateDataResponse.class);
-//                        if (stateResponse != null) {
-//                            String stateStr = stateResponse.body.newState == 1 ? "User is moving" : "User is put.";
-//
-//                            ((TextView)findViewById(R.id.sensorUI_text)).setText(stateStr);
-//                            RelayNotification(stateResponse.toJson());
-//                        }
                     }
 
                     @Override
@@ -212,12 +213,20 @@ public class DeviceConnect extends AppCompatActivity implements AdapterView.OnIt
 
     }
 
+    private void sendAccelLogs(Long timestamp) {
+        MathUtils.Vector result = MathUtils.CalculateTotalAcceleration(this.accell_log);
+        this.accell_log = new ArrayList<>();
+        Log.i(LOG_TAG, "Calculated vector: " + result.toString() + " from " + this.accell_log.size() + " elements");
+        MessageQueuePayload payload = new MessageQueuePayload(result, timestamp);
+        RelayNotification(payload.toJSON());
+    }
+
     private void unsubscribe() {
         if (mdsSubscription != null) {
             mdsSubscription.unsubscribe();
             mdsSubscription = null;
         }
-        Log.i(LOG_TAG, "Calculated vector: " + MathUtils.CalculateTotalAcceleration(this.accell_log).toString() + " from " + this.accell_log.size() + " elements");
+
 
         subscribedDeviceSerial = null;
 
@@ -377,6 +386,6 @@ public class DeviceConnect extends AppCompatActivity implements AdapterView.OnIt
     }
 
     public void onTestBtnClicked(View view) {
-
+        RequestDataFromDevice(connectedDevice.connectedSerial, URI_MEAS_GYRO_INFO);
     }
 }

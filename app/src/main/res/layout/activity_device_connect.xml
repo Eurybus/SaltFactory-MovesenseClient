@@ -144,7 +144,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Test data read"
-            android:onClick="onTestBtnClicked"/>
+            android:onClick="onTestBtnClicked"
+            android:visibility="gone"/>
     </LinearLayout>
 
 
