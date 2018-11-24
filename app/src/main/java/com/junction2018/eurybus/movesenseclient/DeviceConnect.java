@@ -110,6 +110,7 @@ public class DeviceConnect extends AppCompatActivity implements AdapterView.OnIt
                         ShowConnectedDeviceInfo(sr);
                         connectedDevice = sr;
                         findViewById(R.id.listScanResult).setVisibility(View.GONE);
+                        subscribeToSensor(device.connectedSerial);
                         break;
                     }
                 }
