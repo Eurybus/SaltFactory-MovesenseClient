@@ -1,5 +1,6 @@
 package com.junction2018.eurybus.movesenseclient;
 
+import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
 
 
@@ -9,6 +10,11 @@ public class StateDataResponse {
     public final Body body;
 
     public StateDataResponse(Body body) {this.body = body; }
+
+    public String toJson() {
+        Gson gson = new Gson();
+        return gson.toJson(this);
+    }
 
     public static class Body {
         @SerializedName("Timestamp")

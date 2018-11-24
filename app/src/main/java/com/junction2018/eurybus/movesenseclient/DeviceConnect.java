@@ -184,7 +184,7 @@ public class DeviceConnect extends AppCompatActivity implements AdapterView.OnIt
                             String stateStr = stateResponse.body.newState == 1 ? "User is moving" : "User is put.";
 
                             ((TextView)findViewById(R.id.sensorUI_text)).setText(stateStr);
-                            RelayNotification(stateStr);
+                            RelayNotification(stateResponse.toJson());
                         }
                     }
 
