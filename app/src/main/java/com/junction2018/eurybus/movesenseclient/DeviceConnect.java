@@ -8,6 +8,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.FrameLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -38,6 +39,8 @@ public class DeviceConnect extends AppCompatActivity implements AdapterView.OnIt
     private MdsSubscription mdsSubscription;
     private String subscribedDeviceSerial;
 
+    private MyScanResult connectedDevice;
+
     // UI
     private ListView mScanResultListView;
     private ArrayList<MyScanResult> mScanResArrayList = new ArrayList<>();
@@ -61,6 +64,23 @@ public class DeviceConnect extends AppCompatActivity implements AdapterView.OnIt
         return mBleClient;
     }
 
+    private void ShowConnectedDeviceInfo(MyScanResult device) {
+        FrameLayout frameLayout = findViewById(R.id.connectedDeviceInfo);
+        TextView deviceNameText = findViewById(R.id.connectedDeviceMaker);
+        TextView helpText = findViewById(R.id.helpText);
+        deviceNameText.setText( device.name);
+        helpText.setVisibility(View.GONE);
+        frameLayout.setVisibility(View.VISIBLE);
+
+    }
+
+    private void HideConnectedDeviceInfo() {
+        FrameLayout frameLayout = findViewById(R.id.connectedDeviceInfo);
+        frameLayout.setVisibility(View.GONE);
+        TextView helpText = findViewById(R.id.helpText);
+        helpText.setVisibility(View.VISIBLE);
+    }
+
     private void connectBLEDevice(MyScanResult device) {
         RxBleDevice bleDevice = getBleClient().getBleDevice(device.macAddress);
 
@@ -77,6 +97,7 @@ public class DeviceConnect extends AppCompatActivity implements AdapterView.OnIt
                 for (MyScanResult sr : mScanResArrayList) {
                     if (sr.macAddress.equalsIgnoreCase(macAddress)) {
                         sr.markConnected(serial);
+                        ShowConnectedDeviceInfo(sr);
                         break;
                     }
                 }
@@ -102,6 +123,7 @@ public class DeviceConnect extends AppCompatActivity implements AdapterView.OnIt
                             unsubscribe();
 
                         sr.markDisconnected();
+                        HideConnectedDeviceInfo();
                     }
                 }
                 mScanResArrayAdapter.notifyDataSetChanged();
@@ -320,5 +342,9 @@ public class DeviceConnect extends AppCompatActivity implements AdapterView.OnIt
             mMds.disconnect(device.macAddress);
         }
         return true;
+    }
+
+    public void onDisconnectClicked(View view) {
+        mMds.disconnect(connectedDevice.macAddress);
     }
 }

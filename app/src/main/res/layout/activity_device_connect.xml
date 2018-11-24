@@ -12,14 +12,79 @@
         android:orientation="vertical"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/ViewBottom">
+        app:layout_constraintBottom_toTopOf="@id/ViewBottom"
+        android:gravity="center">
 
         <TextView
-            android:id="@+id/textView"
+            android:id="@+id/helpText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_margin="8dp"
             android:text="@string/instructions_text" />
+
+        <FrameLayout
+            android:id="@+id/connectedDeviceInfo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@color/colorPrimary"
+            android:padding="40sp"
+            android:visibility="gone"
+            app:layout_constraintTop_toBottomOf="parent">
+
+            <TableLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <TableRow android:gravity="center">
+
+                    <ImageView
+                        android:id="@+id/imageView"
+                        android:layout_width="180sp"
+                        android:layout_height="180sp"
+                        android:adjustViewBounds="true"
+                        android:contentDescription="Image of movesense device"
+                        android:cropToPadding="true"
+                        android:visibility="visible"
+                        app:srcCompat="@drawable/movesense"/>
+                </TableRow>
+
+                <TableRow android:gravity="center">
+
+                    <TextView
+                        android:id="@+id/connectedDeviceMaker"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="TextView"
+                        android:textAlignment="center"
+                        android:textSize="24sp" />
+                </TableRow>
+
+                <TableRow android:gravity="center">
+
+                    <TextView
+                        android:id="@+id/ConnectedDeviceModel"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="TextView"
+                        android:textAlignment="center"
+                        android:visibility="gone" />
+                </TableRow>
+
+                <TableRow android:gravity="center">
+
+                    <Button
+                        android:id="@+id/buttonDisconnect"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:onClick="onDisconnectClicked"
+                        android:text="Disconnect"
+                        android:visibility="visible" />
+                </TableRow>
+            </TableLayout>
+        </FrameLayout>
 
         <ListView
             android:id="@+id/listScanResult"
@@ -30,6 +95,8 @@
             android:layout_weight="1" />
 
     </LinearLayout>
+
+
 
     <LinearLayout
         android:layout_width="match_parent"
