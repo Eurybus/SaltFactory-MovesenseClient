@@ -10,7 +10,7 @@ public class MessageQueuePayload {
 
     @Override
     public String toString() {
-        calculateTotal();
+        calculateTotalAcceleration();
         return "MessageQueuePayload{" +
                 "ArrayVec=" + ArrayVec +
                 ", timestamp=" + Timestamp +
@@ -22,11 +22,11 @@ public class MessageQueuePayload {
         this.Timestamp = timestamp;
     }
 
-    private void calculateTotal() {
+    private void calculateTotalAcceleration() {
         this.TotalVec = ArrayVec.x + ArrayVec.y + ArrayVec.z;
     }
     public String toJSON(){
-        calculateTotal();
+        calculateTotalAcceleration();
         Gson gson = new Gson();
         return gson.toJson(this);
     }

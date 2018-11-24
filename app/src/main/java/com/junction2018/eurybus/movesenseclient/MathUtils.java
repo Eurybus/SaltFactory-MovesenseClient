@@ -36,10 +36,18 @@ public class MathUtils {
             this.g = 0f;
         }
 
+        // Ugly hack to prevent Gyro error marginals appearing in application data
         public Vector(float x, float y, float z) {
-            this.x = x;
-            this.y = y;
-            this.z = z;
+            if (Math.abs(x) > 15 && Math.abs(y) > 15 && Math.abs(z) > 15){
+                this.x = x;
+                this.y = y;
+                this.z = z;
+            }
+            else {
+                this.x = 0;
+                this.y = 0;
+                this.z = 0;
+            }
         }
 
         public String toJSON(){
