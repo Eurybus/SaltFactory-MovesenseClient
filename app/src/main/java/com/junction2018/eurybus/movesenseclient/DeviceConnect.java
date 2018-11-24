@@ -36,6 +36,11 @@ public class DeviceConnect extends AppCompatActivity implements AdapterView.OnIt
     private Subscription mScanSubscription;
 
     static private String URI_MEAS_ACC_13 = "/Meas/Acc/13";
+    static private String URI_MEAS_ECG_125 = "/Meas/ECG/125";
+    static private String URI_MEAS_HR = "/Meas/HR";
+    static private String URI_SYSTEM_STATES_MOVEMENT = "/System/States/0";
+    static private String URI_SYSTEM_STATES_CONNECTED = "/System/States/2";
+
     private MdsSubscription mdsSubscription;
     private String subscribedDeviceSerial;
 
@@ -64,6 +69,11 @@ public class DeviceConnect extends AppCompatActivity implements AdapterView.OnIt
         return mBleClient;
     }
 
+    private void RelayNotification(String message) {
+        MqttHelper client = MainActivity.mqttHelper;
+        client.PublishMessage(message);
+        Log.d(LOG_TAG, "Sent message to mqtt");
+    }
     private void ShowConnectedDeviceInfo(MyScanResult device) {
         FrameLayout frameLayout = findViewById(R.id.connectedDeviceInfo);
         TextView deviceNameText = findViewById(R.id.connectedDeviceMaker);
@@ -98,6 +108,8 @@ public class DeviceConnect extends AppCompatActivity implements AdapterView.OnIt
                     if (sr.macAddress.equalsIgnoreCase(macAddress)) {
                         sr.markConnected(serial);
                         ShowConnectedDeviceInfo(sr);
+                        connectedDevice = sr;
+                        findViewById(R.id.listScanResult).setVisibility(View.GONE);
                         break;
                     }
                 }
@@ -124,6 +136,7 @@ public class DeviceConnect extends AppCompatActivity implements AdapterView.OnIt
 
                         sr.markDisconnected();
                         HideConnectedDeviceInfo();
+                        findViewById(R.id.listScanResult).setVisibility(View.VISIBLE);
                     }
                 }
                 mScanResArrayAdapter.notifyDataSetChanged();
@@ -140,7 +153,7 @@ public class DeviceConnect extends AppCompatActivity implements AdapterView.OnIt
         // Build JSON doc that describes what resource and device to subscribe
         // Here we subscribe to 13 hertz accelerometer data
         StringBuilder sb = new StringBuilder();
-        String strContract = sb.append("{\"Uri\": \"").append(connectedSerial).append(URI_MEAS_ACC_13).append("\"}").toString();
+        String strContract = sb.append("{\"Uri\": \"").append(connectedSerial).append(URI_SYSTEM_STATES_MOVEMENT).append("\"}").toString();
         Log.d(LOG_TAG, strContract);
         final View sensorUI = findViewById(R.id.sensorUI_text);
 
@@ -156,14 +169,21 @@ public class DeviceConnect extends AppCompatActivity implements AdapterView.OnIt
                         if (sensorUI.getVisibility() == View.GONE)
                             sensorUI.setVisibility(View.VISIBLE);
 
-                        AccDataResponse accResponse = new Gson().fromJson(data, AccDataResponse.class);
-                        if (accResponse != null && accResponse.body.array.length > 0) {
+//                        AccDataResponse accResponse = new Gson().fromJson(data, AccDataResponse.class);
+//                        if (accResponse != null && accResponse.body.array.length > 0) {
+//
+//                            String accStr =
+//                                    String.format("%.02f, %.02f, %.02f",
+//                                            accResponse.body.array[0].x, accResponse.body.array[0].y, accResponse.body.array[0].z);
+//
+//                            ((TextView)findViewById(R.id.sensorUI_text)).setText(accStr);
+//                        }
+                        StateDataResponse stateResponse = new Gson().fromJson(data, StateDataResponse.class);
+                        if (stateResponse != null) {
+                            String stateStr = stateResponse.body.newState == 1 ? "User is moving" : "User is put.";
 
-                            String accStr =
-                                    String.format("%.02f, %.02f, %.02f",
-                                            accResponse.body.array[0].x, accResponse.body.array[0].y, accResponse.body.array[0].z);
-
-                            ((TextView)findViewById(R.id.sensorUI_text)).setText(accStr);
+                            ((TextView)findViewById(R.id.sensorUI_text)).setText(stateStr);
+                            RelayNotification(stateStr);
                         }
                     }
 
@@ -184,10 +204,10 @@ public class DeviceConnect extends AppCompatActivity implements AdapterView.OnIt
 
         subscribedDeviceSerial = null;
 
-//        // If UI not invisible, do it now
-//        final View sensorUI = findViewById(R.id.sensorUI);
-//        if (sensorUI.getVisibility() != View.GONE)
-//            sensorUI.setVisibility(View.GONE);
+        // If UI not invisible, do it now
+        final View sensorUI = findViewById(R.id.sensorUI);
+        if (sensorUI.getVisibility() != View.GONE)
+            sensorUI.setVisibility(View.GONE);
 
     }
 
@@ -212,6 +232,7 @@ public class DeviceConnect extends AppCompatActivity implements AdapterView.OnIt
         mScanResultListView.setAdapter(mScanResArrayAdapter);
         mScanResultListView.setOnItemLongClickListener(this);
         mScanResultListView.setOnItemClickListener(this);
+        onScanClicked(findViewById(R.id.buttonScan));
     }
 
     public void onScanClicked(View view) {
@@ -298,43 +319,8 @@ public class DeviceConnect extends AppCompatActivity implements AdapterView.OnIt
 
         MyScanResult device = mScanResArrayList.get(position);
         if (!device.isConnected()) {
-            RxBleDevice bleDevice = getBleClient().getBleDevice(device.macAddress);
-            Log.i(LOG_TAG, "Connecting to BLE device: " + bleDevice.getMacAddress());
-            mMds.connect(bleDevice.getMacAddress(), new MdsConnectionListener() {
-
-                @Override
-                public void onConnect(String s) {
-                    Log.d(LOG_TAG, "onConnect:" + s);
-                }
-
-                @Override
-                public void onConnectionComplete(String macAddress, String serial) {
-                    for (MyScanResult sr : mScanResArrayList) {
-                        if (sr.macAddress.equalsIgnoreCase(macAddress)) {
-                            sr.markConnected(serial);
-                            break;
-                        }
-                    }
-                    mScanResArrayAdapter.notifyDataSetChanged();
-                }
-
-                @Override
-                public void onError(MdsException e) {
-                    Log.e(LOG_TAG, "onError:" + e);
-
-                    showConnectionError(e);
-                }
-
-                @Override
-                public void onDisconnect(String bleAddress) {
-                    Log.d(LOG_TAG, "onDisconnect: " + bleAddress);
-                    for (MyScanResult sr : mScanResArrayList) {
-                        if (bleAddress.equals(sr.macAddress))
-                            sr.markDisconnected();
-                    }
-                    mScanResArrayAdapter.notifyDataSetChanged();
-                }
-            });
+            onScanStopClicked(null);
+            connectBLEDevice(device);
         }
         else
         {
@@ -345,6 +331,9 @@ public class DeviceConnect extends AppCompatActivity implements AdapterView.OnIt
     }
 
     public void onDisconnectClicked(View view) {
+
+        mdsSubscription.unsubscribe();
         mMds.disconnect(connectedDevice.macAddress);
+        connectedDevice = null;
     }
 }

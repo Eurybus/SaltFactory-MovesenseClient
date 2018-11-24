@@ -22,7 +22,7 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 
 public class MainActivity extends AppCompatActivity {
 
-    MqttHelper mqttHelper;
+    public static MqttHelper mqttHelper;
 
     private void startMqtt(){
         mqttHelper = new MqttHelper(getApplicationContext());
@@ -54,6 +54,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         startMqtt();
+        onToDeviceScreenClicked(findViewById(R.id.btnSendMessage));
     }
 
 
