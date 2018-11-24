@@ -19,7 +19,7 @@ public class MqttHelper {
     final String serverUri = "ws://broker.mqttdashboard.com:8000";
 
     final String clientId = "MovesenseAndroidClient";
-    final String subscriptionTopic = "sinful_tinderness_core/doggy";//"sinful_tinderness_core/sensor";
+    final String subscriptionTopic = "sinful_tinderness_core/doggy";
 
     final String username = "kbqbvlxv";
     final String password = "yYtD6fVgyYWI";

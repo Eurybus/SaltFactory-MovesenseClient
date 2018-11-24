@@ -24,6 +24,10 @@ import com.polidea.rxandroidble.RxBleClient;
 import com.polidea.rxandroidble.RxBleDevice;
 import com.polidea.rxandroidble.scan.ScanSettings;
 
+import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
+import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
+import org.eclipse.paho.client.mqttv3.MqttMessage;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -47,6 +51,8 @@ public class DeviceConnect extends AppCompatActivity implements AdapterView.OnIt
     static private String URI_MEAS_GYRO_GET_13 = "/Meas/Gyro/13";
 
 
+    private DogImageUpdater dogImageUpdater;
+
     private MdsSubscription mdsSubscription;
     private String subscribedDeviceSerial;
 
@@ -62,6 +68,35 @@ public class DeviceConnect extends AppCompatActivity implements AdapterView.OnIt
     public static final String SCHEME_PREFIX = "suunto://";
 
     public List<MathUtils.Vector> accell_log;
+
+    public static MqttHelper mqttHelper;
+
+    private void startMqtt(){
+        mqttHelper = new MqttHelper(getApplicationContext());
+        mqttHelper.setCallback(new MqttCallbackExtended() {
+            @Override
+            public void connectComplete(boolean b, String s) {
+                Log.w("MQTT", "Connected to Mqtt: " + s);
+            }
+
+            @Override
+            public void connectionLost(Throwable throwable) {
+                Log.e("MQTT", "Lost connection to " + mqttHelper.serverUri);
+            }
+
+            @Override
+            public void messageArrived(String topic, MqttMessage mqttMessage) throws Exception {
+//                Log.w("MQTT",mqttMessage.toString());
+                DogProtocolPayloadObject doggoPayload = new Gson().fromJson(mqttMessage.toString(), DogProtocolPayloadObject.class);
+                dogImageUpdater.ChangeState(doggoPayload.picture_id);
+            }
+
+            @Override
+            public void deliveryComplete(IMqttDeliveryToken iMqttDeliveryToken) {
+
+            }
+        });
+    }
 
     private void updateAccelLog(MathUtils.Vector input) {
         if (this.accell_log == null)
@@ -83,8 +118,7 @@ public class DeviceConnect extends AppCompatActivity implements AdapterView.OnIt
     }
 
     protected void RelayNotification(String message) {
-        MqttHelper client = MainActivity.mqttHelper;
-        client.PublishMessage(message);
+        mqttHelper.PublishMessage(message);
         Log.d(LOG_TAG, "Sent message to mqtt");
     }
     private void ShowConnectedDeviceInfo(MyScanResult device) {
@@ -259,6 +293,10 @@ public class DeviceConnect extends AppCompatActivity implements AdapterView.OnIt
         mScanResultListView.setOnItemLongClickListener(this);
         mScanResultListView.setOnItemClickListener(this);
         onScanClicked(findViewById(R.id.buttonScan));
+
+        dogImageUpdater = new DogImageUpdater(findViewById(R.id.dogImageView), this);
+        startMqtt();
+
     }
 
     public void onScanClicked(View view) {

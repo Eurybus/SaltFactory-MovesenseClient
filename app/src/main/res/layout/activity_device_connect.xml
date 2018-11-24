@@ -8,27 +8,52 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:orientation="vertical"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/ViewBottom"
-        android:gravity="center">
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:id="@+id/ViewTop">
 
-        <TextView
-            android:id="@+id/helpText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_margin="8dp"
-            android:text="@string/short_help_text" />
+        <FrameLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:background="@color/colorPrimary"
+            android:id="@+id/digiTwinFrame">
 
+            <TableLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:orientation="vertical">
+
+                <TableRow android:gravity="center">
+
+                    <ImageView
+                        android:id="@+id/dogImageView"
+                        android:layout_width="180sp"
+                        android:layout_height="180sp"
+                        android:adjustViewBounds="true"
+                        android:contentDescription="Image of movesense device"
+                        android:cropToPadding="true"
+                        android:visibility="visible"
+                        app:srcCompat="@drawable/dog1"/>
+                </TableRow>
+
+                <TableRow android:gravity="center">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="My digital twin"
+                        android:textAlignment="center"
+                        android:visibility="visible" />
+                </TableRow>
+            </TableLayout>
+        </FrameLayout>
         <FrameLayout
             android:id="@+id/connectedDeviceInfo"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:background="@color/colorPrimary"
-            android:layout_marginTop="40sp"
-            android:padding="40sp"
+            android:padding="20sp"
             android:visibility="gone"
             app:layout_constraintTop_toBottomOf="parent">
 
@@ -86,6 +111,23 @@
                 </TableRow>
             </TableLayout>
         </FrameLayout>
+    </LinearLayout>
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:orientation="vertical"
+        app:layout_constraintBottom_toTopOf="@id/ViewBottom"
+        app:layout_constraintTop_toBottomOf="@id/ViewTop"
+        android:gravity="center">
+
+        <TextView
+            android:id="@+id/helpText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            android:text="@string/short_help_text" />
 
         <ListView
             android:id="@+id/listScanResult"
