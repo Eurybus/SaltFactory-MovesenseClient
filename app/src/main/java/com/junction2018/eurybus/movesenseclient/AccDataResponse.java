@@ -4,6 +4,7 @@ package com.junction2018.eurybus.movesenseclient;
  * Created by lipponep on 22.11.2017.
  */
 
+import com.google.gson.Gson;
 import com.google.gson.annotations.SerializedName;
 
 public class AccDataResponse {
@@ -13,6 +14,11 @@ public class AccDataResponse {
 
     public AccDataResponse(Body body) {
         this.body = body;
+    }
+
+    public String toJson() {
+        Gson gson = new Gson();
+        return gson.toJson(this);
     }
 
     public static class Body {

@@ -13,6 +13,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.movesense.mds.Mds;
 import com.movesense.mds.MdsConnectionListener;
 import com.movesense.mds.MdsException;
@@ -24,6 +25,7 @@ import com.polidea.rxandroidble.RxBleDevice;
 import com.polidea.rxandroidble.scan.ScanSettings;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import rx.Subscription;
 
@@ -55,6 +57,13 @@ public class DeviceConnect extends AppCompatActivity implements AdapterView.OnIt
     public static final String URI_EVENTLISTENER = "suunto://MDS/EventListener";
     public static final String SCHEME_PREFIX = "suunto://";
 
+    public List<MathUtils.Vector> accell_log;
+
+    private void updateAccelLog(MathUtils.Vector input) {
+        if (this.accell_log == null)
+                this.accell_log = new ArrayList<>();
+        this.accell_log.add(input);
+    }
     private void initMds(Context context){
         mMds = Mds.builder().build(context);
     }
@@ -69,7 +78,7 @@ public class DeviceConnect extends AppCompatActivity implements AdapterView.OnIt
         return mBleClient;
     }
 
-    private void RelayNotification(String message) {
+    protected void RelayNotification(String message) {
         MqttHelper client = MainActivity.mqttHelper;
         client.PublishMessage(message);
         Log.d(LOG_TAG, "Sent message to mqtt");
@@ -154,7 +163,7 @@ public class DeviceConnect extends AppCompatActivity implements AdapterView.OnIt
         // Build JSON doc that describes what resource and device to subscribe
         // Here we subscribe to 13 hertz accelerometer data
         StringBuilder sb = new StringBuilder();
-        String strContract = sb.append("{\"Uri\": \"").append(connectedSerial).append(URI_SYSTEM_STATES_MOVEMENT).append("\"}").toString();
+        String strContract = sb.append("{\"Uri\": \"").append(connectedSerial).append(URI_MEAS_ACC_13).append("\"}").toString();
         Log.d(LOG_TAG, strContract);
         final View sensorUI = findViewById(R.id.sensorUI_text);
 
@@ -170,22 +179,28 @@ public class DeviceConnect extends AppCompatActivity implements AdapterView.OnIt
                         if (sensorUI.getVisibility() == View.GONE)
                             sensorUI.setVisibility(View.VISIBLE);
 
-//                        AccDataResponse accResponse = new Gson().fromJson(data, AccDataResponse.class);
-//                        if (accResponse != null && accResponse.body.array.length > 0) {
-//
-//                            String accStr =
-//                                    String.format("%.02f, %.02f, %.02f",
-//                                            accResponse.body.array[0].x, accResponse.body.array[0].y, accResponse.body.array[0].z);
-//
-//                            ((TextView)findViewById(R.id.sensorUI_text)).setText(accStr);
-//                        }
-                        StateDataResponse stateResponse = new Gson().fromJson(data, StateDataResponse.class);
-                        if (stateResponse != null) {
-                            String stateStr = stateResponse.body.newState == 1 ? "User is moving" : "User is put.";
+                        AccDataResponse accResponse = new Gson().fromJson(data, AccDataResponse.class);
+                        if (accResponse != null && accResponse.body.array.length > 0) {
 
-                            ((TextView)findViewById(R.id.sensorUI_text)).setText(stateStr);
-                            RelayNotification(stateResponse.toJson());
+                            String accStr =
+                                    String.format("%.02f, %.02f, %.02f",
+                                            accResponse.body.array[0].x, accResponse.body.array[0].y, accResponse.body.array[0].z);
+
+                            ((TextView)findViewById(R.id.sensorUI_text)).setText(accStr);
+                            updateAccelLog(new MathUtils.Vector(
+                                    (float)accResponse.body.array[0].x,
+                                    (float)accResponse.body.array[0].y,
+                                    (float)accResponse.body.array[0].z
+                            ));
+                            //RelayNotification(accResponse.toJson());
                         }
+//                        StateDataResponse stateResponse = new Gson().fromJson(data, StateDataResponse.class);
+//                        if (stateResponse != null) {
+//                            String stateStr = stateResponse.body.newState == 1 ? "User is moving" : "User is put.";
+//
+//                            ((TextView)findViewById(R.id.sensorUI_text)).setText(stateStr);
+//                            RelayNotification(stateResponse.toJson());
+//                        }
                     }
 
                     @Override
@@ -202,6 +217,7 @@ public class DeviceConnect extends AppCompatActivity implements AdapterView.OnIt
             mdsSubscription.unsubscribe();
             mdsSubscription = null;
         }
+        Log.i(LOG_TAG, "Calculated vector: " + MathUtils.CalculateTotalAcceleration(this.accell_log).toString() + " from " + this.accell_log.size() + " elements");
 
         subscribedDeviceSerial = null;
 
@@ -307,7 +323,6 @@ public class DeviceConnect extends AppCompatActivity implements AdapterView.OnIt
             connectBLEDevice(device);
         }
         else {
-            // Device is connected, trigger showing /Info
             subscribeToSensor(device.connectedSerial);
         }
     }
@@ -336,5 +351,32 @@ public class DeviceConnect extends AppCompatActivity implements AdapterView.OnIt
         mdsSubscription.unsubscribe();
         mMds.disconnect(connectedDevice.macAddress);
         connectedDevice = null;
+    }
+
+    public String RequestDataFromDevice(String serial, String endpoint) {
+        String uri = SCHEME_PREFIX + serial + endpoint;
+        final Context ctx = this;
+        mMds.get(uri, null, new MdsResponseListener() {
+            @Override
+            public void onSuccess(String s) {
+                Log.i(LOG_TAG, "Device " + serial + " /info request succesful: " + s);
+                // Display info in alert dialog
+                AlertDialog.Builder builder = new AlertDialog.Builder(ctx);
+                builder.setTitle("Device info:")
+                        .setMessage(s)
+                        .show();
+                RelayNotification(s);
+            }
+
+            @Override
+            public void onError(MdsException e) {
+                Log.e(LOG_TAG, "Device " + serial + " "+ endpoint + " returned error: " + e);
+            }
+        });
+        return "asd";
+    }
+
+    public void onTestBtnClicked(View view) {
+
     }
 }

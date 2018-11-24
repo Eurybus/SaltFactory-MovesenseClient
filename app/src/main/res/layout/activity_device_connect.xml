@@ -140,6 +140,11 @@
             android:onClick="onScanStopClicked"
             android:text="Stop Scan"
             android:visibility="gone" />
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Test data read"
+            android:onClick="onTestBtnClicked"/>
     </LinearLayout>
 
 
