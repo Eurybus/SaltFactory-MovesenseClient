@@ -16,15 +16,15 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 public class MqttHelper {
     public MqttAndroidClient mqttAndroidClient;
 
-    final String serverUri = "tcp://m21.cloudmqtt.com:16543";
+    final String serverUri = "ws://broker.mqttdashboard.com:8000";
 
-    final String clientId = "MovsenseAndroidClient";
-    final String subscriptionTopic = "sensor";
+    final String clientId = "MovesenseAndroidClient";
+    final String subscriptionTopic = "sinful_tinderness_core/sensor";
 
     final String username = "kbqbvlxv";
     final String password = "yYtD6fVgyYWI";
 
-    private String publishTopic = "sensor";
+    private String publishTopic = "sinful_tinderness_core/sensor";
 
     public MqttHelper(Context context){
         mqttAndroidClient = new MqttAndroidClient(context, serverUri, clientId);
