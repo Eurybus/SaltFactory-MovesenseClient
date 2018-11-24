@@ -1,6 +1,7 @@
 package com.junction2018.eurybus.movesenseclient;
 
 import android.Manifest;
+import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -19,7 +20,7 @@ import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
-public class MainActivity extends AppCompatActivity implements AdapterView.OnItemClickListener, AdapterView.OnItemLongClickListener {
+public class MainActivity extends AppCompatActivity {
 
     MqttHelper mqttHelper;
 
@@ -55,23 +56,13 @@ public class MainActivity extends AppCompatActivity implements AdapterView.OnIte
         startMqtt();
     }
 
-    public void onScanClicked(View view) {
-    }
-
-    public void onScanStopClicked(View view) {
-    }
-
-    @Override
-    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-
-    }
-
-    @Override
-    public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
-        return false;
-    }
 
     public void onSendMessageClicked(View view) {
         mqttHelper.PublishMessage("Oispa kaljaa");
+    }
+
+    public void onToDeviceScreenClicked(View view) {
+        Intent intent = new Intent(this, DeviceConnect.class);
+        this.startActivity(intent);
     }
 }
