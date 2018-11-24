@@ -14,6 +14,7 @@ import com.movesense.mds.Mds;
 import com.movesense.mds.MdsConnectionListener;
 import com.movesense.mds.MdsException;
 import com.movesense.mds.MdsResponseListener;
+import com.movesense.mds.MdsSubscription;
 import com.polidea.rxandroidble.RxBleClient;
 import com.polidea.rxandroidble.RxBleDevice;
 import com.polidea.rxandroidble.scan.ScanSettings;
@@ -29,6 +30,10 @@ public class DeviceConnect extends AppCompatActivity implements AdapterView.OnIt
 
     private Mds mMds;
     private Subscription mScanSubscription;
+
+    static private String URI_MEAS_ACC_13 = "/Meas/Acc/13";
+    private MdsSubscription mdsSubscription;
+    private String subscribedDeviceSerial;
 
     // UI
     private ListView mScanResultListView;
@@ -51,6 +56,69 @@ public class DeviceConnect extends AppCompatActivity implements AdapterView.OnIt
         }
 
         return mBleClient;
+    }
+
+    private void connectBLEDevice(MyScanResult device) {
+        RxBleDevice bleDevice = getBleClient().getBleDevice(device.macAddress);
+
+        Log.i(LOG_TAG, "Connecting to BLE device: " + bleDevice.getMacAddress());
+        mMds.connect(bleDevice.getMacAddress(), new MdsConnectionListener() {
+
+            @Override
+            public void onConnect(String s) {
+                Log.d(LOG_TAG, "onConnect:" + s);
+            }
+
+            @Override
+            public void onConnectionComplete(String macAddress, String serial) {
+                for (MyScanResult sr : mScanResArrayList) {
+                    if (sr.macAddress.equalsIgnoreCase(macAddress)) {
+                        sr.markConnected(serial);
+                        break;
+                    }
+                }
+                mScanResArrayAdapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public void onError(MdsException e) {
+                Log.e(LOG_TAG, "onError:" + e);
+
+                showConnectionError(e);
+            }
+
+            @Override
+            public void onDisconnect(String bleAddress) {
+
+                Log.d(LOG_TAG, "onDisconnect: " + bleAddress);
+                for (MyScanResult sr : mScanResArrayList) {
+                    if (bleAddress.equals(sr.macAddress))
+                    {
+                        // unsubscribe if was subscribed
+                        if (sr.connectedSerial != null && sr.connectedSerial.equals(subscribedDeviceSerial))
+                            unsubscribe();
+
+                        sr.markDisconnected();
+                    }
+                }
+                mScanResArrayAdapter.notifyDataSetChanged();
+            }
+        });
+    }
+
+    private void unsubscribe() {
+        if (mdsSubscription != null) {
+            mdsSubscription.unsubscribe();
+            mdsSubscription = null;
+        }
+
+        subscribedDeviceSerial = null;
+
+//        // If UI not invisible, do it now
+//        final View sensorUI = findViewById(R.id.sensorUI);
+//        if (sensorUI.getVisibility() != View.GONE)
+//            sensorUI.setVisibility(View.GONE);
+
     }
 
     private void showConnectionError(MdsException e) {
